@@ -53,3 +53,6 @@ gcp-credentials*.json
 # Project-specific sensitive/generated data
 scripts/prompts-data.js
 scripts/tools-data.js
+
+# Auto-generated env file — contains API keys, never commit
+assets/js/env.js
