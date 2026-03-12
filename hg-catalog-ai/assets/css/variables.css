@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --blue:        #0f2d5c;
+  --blue-mid:    #1e4d9b;
+  --blue-light:  #c8daf5;
+  --blue-pale:   #eaf1fc;
+  --accent:      #f59e0b;
+  --accent-bg:   #fef3c7;
+  --text:        #111827;
+  --muted:       #6b7280;
+  --border:      #d1dce8;
+  --white:       #ffffff;
+  --row-alt:     #f5f9ff;
+  --green:       #059669;
+  --green-bg:    #d1fae5;
+  --surface:     #f0f5fc;
+  --sidebar-w:   220px;
+
+  /* area accent colors */
+  --area-gp:    #2563eb;
+  --area-bim:   #7c3aed;
+  --area-arq:   #0891b2;
+  --area-cos:   #d97706;
+  --area-rrhh:  #059669;
+  --area-admin: #64748b;
+  --area-comp:  #e11d48;
+  --area-coord: #0f766e;
+  --area-ssoma: #dc2626;
+  --area-gobra: #7e5bef;
+}
+
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--surface);
+  min-height: 100vh;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}

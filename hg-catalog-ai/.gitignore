@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Netlify local artifacts
+.netlify/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables (never commit)
+.env
+.env.local
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build / cache
+dist/
+build/
+.cache/
+.tmp/
+temp/
+
+# Sensitive data / secrets
+keys/
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# Firebase / GCP service accounts
+*sa*.json
+*service-account*.json
+firebase-admin*.json
+gcp-credentials*.json
+
+# Local tooling auth files
+.firebase/
+.firebaserc.local
+
+# Project-specific sensitive/generated data
+scripts/prompts-data.js
+scripts/tools-data.js

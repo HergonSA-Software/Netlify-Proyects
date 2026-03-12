@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Catálogo IA Hergon</title>
+<link rel="stylesheet" href="../assets/css/variables.css">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+
+<!-- ── LOGIN VIEW ──────────────────────────────────────────────────────────── -->
+<div id="view-login" style="display:none">
+  <div class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="../assets/img/logo.png" alt="Hergon">
+        <div class="login-brand">
+          Obras Hergon
+          <span>Panel de Administración</span>
+        </div>
+      </div>
+      <div class="login-title">Iniciar sesión</div>
+      <div class="login-sub">Acceso exclusivo para administradores del catálogo IA.</div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Correo electrónico</label>
+          <input class="form-input" type="email" id="login-email" placeholder="admin@hergon.pe" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Contraseña</label>
+          <input class="form-input" type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div class="form-error" id="login-error"></div>
+        <button class="btn-primary" type="submit" id="login-btn">Ingresar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN VIEW ──────────────────────────────────────────────────────────── -->
+<div id="view-admin" style="display:none">
+  <div class="admin-layout">
+
+    <!-- Top bar -->
+    <div class="admin-topbar">
+      <div class="admin-topbar-left">
+        <img src="../assets/img/logo.png" alt="Hergon">
+        <span class="admin-topbar-title">Catálogo IA — Admin</span>
+        <span class="admin-topbar-badge">Panel de Gestión</span>
+      </div>
+      <div class="admin-topbar-right">
+        <a href="../index.html" class="btn-logout" style="text-decoration:none">👁 Ver catálogo</a>
+        <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="admin-content">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Herramientas del Catálogo</div>
+          <div class="section-sub" id="admin-tool-count">Cargando…</div>
+        </div>
+        <button class="btn-icon" style="padding:0.55rem 1.25rem;font-size:0.8rem" onclick="openForm()">
+          + Nueva Herramienta
+        </button>
+      </div>
+
+      <!-- Tools table -->
+      <div class="tools-table-wrap">
+        <table class="tools-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Título</th>
+              <th>Área</th>
+              <th>Descripción</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tools-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOOL FORM MODAL ──────────────────────────────────────────────────────── -->
+<div class="form-overlay" id="form-overlay">
+  <div class="form-modal">
+    <div class="form-modal-header">
+      <span class="form-modal-title" id="form-modal-title">Nueva Herramienta</span>
+      <button class="form-modal-close" onclick="closeForm()">✕</button>
+    </div>
+
+    <form id="tool-form">
+      <div class="form-modal-body">
+
+        <!-- Identificación -->
+        <div class="form-row">
+          <div class="form-section-title">Identificación</div>
+          <div class="form-group">
+            <label class="form-label">Código *</label>
+            <input class="form-input" id="f-code" placeholder="ej: GP-011" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Área principal *</label>
+            <select class="form-input" id="f-area" required>
+              <option value="">Seleccionar área…</option>
+              <option value="gestión de proyectos">Gestión de Proyectos</option>
+              <option value="costos">Costos</option>
+              <option value="bim">BIM</option>
+              <option value="arquitectura">Arquitectura</option>
+              <option value="ssoma">SSOMA</option>
+              <option value="gestión obra">Gestión Obra</option>
+              <option value="rrhh">RRHH</option>
+              <option value="administración">Administración</option>
+              <option value="compras">Compras</option>
+              <option value="coordinación">Coordinación</option>
+            </select>
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Título *</label>
+            <input class="form-input" id="f-title" placeholder="Nombre completo de la herramienta" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Área secundaria</label>
+            <select class="form-input" id="f-area2">
+              <option value="">— ninguna —</option>
+              <option value="gestión de proyectos">Gestión de Proyectos</option>
+              <option value="costos">Costos</option>
+              <option value="bim">BIM</option>
+              <option value="arquitectura">Arquitectura</option>
+              <option value="ssoma">SSOMA</option>
+              <option value="gestión obra">Gestión Obra</option>
+              <option value="rrhh">RRHH</option>
+              <option value="administración">Administración</option>
+              <option value="compras">Compras</option>
+              <option value="coordinación">Coordinación</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Área terciaria</label>
+            <select class="form-input" id="f-area3">
+              <option value="">— ninguna —</option>
+              <option value="gestión de proyectos">Gestión de Proyectos</option>
+              <option value="costos">Costos</option>
+              <option value="bim">BIM</option>
+              <option value="arquitectura">Arquitectura</option>
+              <option value="ssoma">SSOMA</option>
+              <option value="gestión obra">Gestión Obra</option>
+              <option value="rrhh">RRHH</option>
+              <option value="administración">Administración</option>
+              <option value="compras">Compras</option>
+              <option value="coordinación">Coordinación</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Área cuaternaria</label>
+            <select class="form-input" id="f-area4">
+              <option value="">— ninguna —</option>
+              <option value="gestión de proyectos">Gestión de Proyectos</option>
+              <option value="costos">Costos</option>
+              <option value="bim">BIM</option>
+              <option value="arquitectura">Arquitectura</option>
+              <option value="ssoma">SSOMA</option>
+              <option value="gestión obra">Gestión Obra</option>
+              <option value="rrhh">RRHH</option>
+              <option value="administración">Administración</option>
+              <option value="compras">Compras</option>
+              <option value="coordinación">Coordinación</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-row">
+          <div class="form-section-title">Descripción</div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Descripción completa *</label>
+            <textarea class="form-input" id="f-desc" rows="3" placeholder="¿Qué hace esta herramienta?" required></textarea>
+          </div>
+        </div>
+
+        <!-- Requerimientos -->
+        <div>
+          <div class="form-section-title" style="margin-bottom:0.75rem">Requerimientos</div>
+          <div class="dynamic-list" id="reqs-list"></div>
+          <button type="button" class="btn-add-item" style="margin-top:0.5rem"
+            onclick="addListItem('reqs-list', renderReqItem, ['',''])">
+            + Agregar requerimiento
+          </button>
+        </div>
+
+        <!-- Flujo de trabajo -->
+        <div>
+          <div class="form-section-title" style="margin-bottom:0.75rem">Flujo de Trabajo (3 etapas)</div>
+          <div class="dynamic-list" id="flow-list"></div>
+          <button type="button" class="btn-add-item" style="margin-top:0.5rem"
+            onclick="addListItem('flow-list', renderFlowItem, {stage:'',main:'',sub:''})">
+            + Agregar etapa
+          </button>
+        </div>
+
+        <!-- Pasos -->
+        <div>
+          <div class="form-section-title" style="margin-bottom:0.75rem">Pasos de Configuración</div>
+          <div class="dynamic-list" id="steps-list"></div>
+          <button type="button" class="btn-add-item" style="margin-top:0.5rem"
+            onclick="addListItem('steps-list', renderStepItem, {title:'',tag:'',tagColor:'',desc:''})">
+            + Agregar paso
+          </button>
+        </div>
+
+        <!-- System Prompt -->
+        <div class="form-row">
+          <div class="form-section-title">System Prompt</div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Prompt del Sistema (Markdown)</label>
+            <textarea class="form-input prompt-ta" id="f-prompt"
+              placeholder="# ROL Y PERFIL&#10;Eres un experto en..."></textarea>
+          </div>
+        </div>
+
+        <!-- Recursos -->
+        <div>
+          <div class="form-section-title" style="margin-bottom:0.75rem">Recursos Disponibles</div>
+          <div class="dynamic-list" id="resources-list"></div>
+          <button type="button" class="btn-add-item" style="margin-top:0.5rem"
+            onclick="addListItem('resources-list', renderResourceItem, {icon:'🔗',name:'',url:'',desc:''})">
+            + Agregar recurso
+          </button>
+        </div>
+
+      </div><!-- /form-modal-body -->
+
+      <div class="form-modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeForm()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="width:auto;padding:0.6rem 1.5rem">
+          💾 Guardar Herramienta
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRM ──────────────────────────────────────────────────────── -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-card">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title">¿Eliminar herramienta?</div>
+    <div class="confirm-sub">
+      Se eliminará "<strong id="confirm-tool-title"></strong>" permanentemente de Firestore.
+      Esta acción no se puede deshacer.
+    </div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="cancelDelete()">Cancelar</button>
+      <button class="btn-danger" onclick="executeDelete()" style="padding:0.55rem 1.25rem">
+        Sí, eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── LOADING OVERLAY ─────────────────────────────────────────────────────── -->
+<div class="loading-overlay" id="loading-overlay">Cargando…</div>
+
+<script src="../assets/js/firebase-init.js"></script>
+<script src="../assets/js/supabase-init.js"></script>
+<script src="../assets/js/admin.js"></script>
+</body>
+</html>

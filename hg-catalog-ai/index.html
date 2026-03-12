@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo IA — Obras Hergon</title>
+<link rel="stylesheet" href="assets/css/variables.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/cards.css">
+<link rel="stylesheet" href="assets/css/modal.css">
+</head>
+<body>
+
+<!-- Mobile overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- Hamburger -->
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menú">
+  <span></span><span></span><span></span>
+</button>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo-img">
+        <img src="assets/img/logo.png" alt="Hergon" class="hergon-logo">
+      </div>
+      <div class="sidebar-title">Catálogo<br>Herramientas IA</div>
+      <div class="sidebar-sub">Claude Desktop · Cowork</div>
+      <div class="sidebar-version">v2026 · Herramientas activas</div>
+    </div>
+    <div class="area-section">
+      <div class="area-label">Áreas de Trabajo</div>
+      <button class="area-btn active" data-area="todas" onclick="setArea('todas')">
+        <div class="area-icon">🗂️</div>
+        <span class="area-name">Todas</span>
+        <span class="area-count" id="cnt-todas">0</span>
+      </button>
+      <hr class="area-divider">
+      <button class="area-btn" data-area="gestión de proyectos" onclick="setArea('gestión de proyectos')">
+        <div class="area-icon">📋</div>
+        <span class="area-name">Gestión Proyectos</span>
+        <span class="area-count" id="cnt-gestion">0</span>
+      </button>
+      <button class="area-btn" data-area="costos" onclick="setArea('costos')">
+        <div class="area-icon">💰</div>
+        <span class="area-name">Costos</span>
+        <span class="area-count" id="cnt-costos">0</span>
+      </button>
+      <button class="area-btn" data-area="bim" onclick="setArea('bim')">
+        <div class="area-icon">🧊</div>
+        <span class="area-name">BIM</span>
+        <span class="area-count" id="cnt-bim">0</span>
+      </button>
+      <button class="area-btn" data-area="arquitectura" onclick="setArea('arquitectura')">
+        <div class="area-icon">🏛️</div>
+        <span class="area-name">Arquitectura</span>
+        <span class="area-count" id="cnt-arq">0</span>
+      </button>
+      <hr class="area-divider">
+      <button class="area-btn" data-area="ssoma" onclick="setArea('ssoma')">
+        <div class="area-icon">🦺</div>
+        <span class="area-name">SSOMA</span>
+        <span class="area-count" id="cnt-ssoma">0</span>
+      </button>
+      <button class="area-btn" data-area="gestión obra" onclick="setArea('gestión obra')">
+        <div class="area-icon">🏗️</div>
+        <span class="area-name">Gestión Obra</span>
+        <span class="area-count" id="cnt-gobra">0</span>
+      </button>
+      <button class="area-btn" data-area="rrhh" onclick="setArea('rrhh')">
+        <div class="area-icon">👥</div>
+        <span class="area-name">RRHH</span>
+        <span class="area-count" id="cnt-rrhh">0</span>
+      </button>
+      <button class="area-btn" data-area="administración" onclick="setArea('administración')">
+        <div class="area-icon">📁</div>
+        <span class="area-name">Administración</span>
+        <span class="area-count" id="cnt-admin">0</span>
+      </button>
+      <button class="area-btn" data-area="compras" onclick="setArea('compras')">
+        <div class="area-icon">🛒</div>
+        <span class="area-name">Compras</span>
+        <span class="area-count" id="cnt-compras">0</span>
+      </button>
+      <button class="area-btn" data-area="coordinación" onclick="setArea('coordinación')">
+        <div class="area-icon">🔗</div>
+        <span class="area-name">Coordinación</span>
+        <span class="area-count" id="cnt-coord">0</span>
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-text">Obras Hergon S.A.<br>Catálogo interno — uso exclusivo</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-area" id="topbar-area">TODAS LAS ÁREAS</span>
+      <span class="topbar-desc" id="topbar-desc">Herramientas de IA activas en Obras Hergon</span>
+      <span class="topbar-count" id="topbar-count">0 herramientas</span>
+    </div>
+
+    <div class="grid-wrap">
+      <div class="tool-grid" id="tool-grid"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-meta">
+        <span class="modal-code" id="m-code"></span>
+        <span class="modal-area-chip" id="m-area"></span>
+      </div>
+      <div class="modal-title" id="m-title"></div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="m-section">
+        <div class="m-title">Descripción — ¿Qué hace?</div>
+        <div class="m-box"><p id="m-desc"></p></div>
+      </div>
+      <div class="m-section">
+        <div class="m-title">Requerimientos — ¿Qué necesito para usarlo?</div>
+        <div class="m-box">
+          <table class="m-table" id="m-reqs"></table>
+        </div>
+      </div>
+      <div class="m-section">
+        <div class="m-title">Flujo de Trabajo</div>
+        <div class="m-flow" id="m-flow"></div>
+      </div>
+      <div class="m-section">
+        <div class="m-title">¿Cómo empezar?</div>
+        <div class="install-steps" id="m-steps"></div>
+      </div>
+      <div class="m-section" id="m-prompt-section">
+        <div class="m-title">Prompt del Sistema — Copiar y Pegar</div>
+        <div class="prompt-wrap">
+          <div class="prompt-toolbar">
+            <span class="prompt-label">🤖 System Prompt completo</span>
+            <div class="prompt-actions">
+              <button class="expand-btn" id="expand-btn" onclick="toggleExpand()">⤢ Expandir</button>
+              <button class="copy-btn" id="copy-btn" onclick="copyPrompt()">
+                <span id="copy-icon">⎘</span> <span id="copy-label">Copiar</span>
+              </button>
+            </div>
+          </div>
+          <div class="prompt-text" id="m-prompt"></div>
+        </div>
+      </div>
+      <div class="m-section" id="m-costnotes-section">
+        <div class="m-title">💲 Consideraciones de Costo</div>
+        <div class="m-cost-body" id="m-costnotes"></div>
+      </div>
+      <div class="m-section">
+        <div class="m-title">Recursos Disponibles</div>
+        <div class="resource-list" id="m-resources"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/firebase-init.js"></script>
+<script src="assets/js/catalog.js"></script>
+</body>
+</html>
