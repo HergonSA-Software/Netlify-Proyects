@@ -1,6 +1,5 @@
 // Firebase Auth client — REST API only, no SDK dependency
-// Replaces Supabase Auth. Same Auth interface maintained for compatibility.
-const FIREBASE_API_KEY = 'AIzaSyAHEQqxn-cNGWFrw7RkA2XmgcNI6XV8TFw';
+const FIREBASE_API_KEY = window._env_?.FIREBASE_API_KEY || '';
 
 const Auth = {
   _session: null,
