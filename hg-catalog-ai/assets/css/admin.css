@@ -167,6 +167,25 @@
 
 .btn-icon:hover { background: var(--blue-light); }
 
+.btn-ai {
+  padding: 0.55rem 1.1rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+.btn-ai:hover   { opacity: 0.88; }
+.btn-ai:active  { transform: scale(0.97); }
+
 /* ══ ADMIN LAYOUT ══════════════════════════════════════════════════════════ */
 .admin-layout {
   min-height: 100vh;
