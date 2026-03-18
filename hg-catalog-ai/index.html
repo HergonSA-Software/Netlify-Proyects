@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="assets/css/layout.css">
 <link rel="stylesheet" href="assets/css/cards.css">
 <link rel="stylesheet" href="assets/css/modal.css">
+<link rel="stylesheet" href="assets/css/chat.css">
 <script src="assets/js/env.js"></script>
 </head>
 <body>
@@ -169,7 +170,44 @@
   </div>
 </div>
 
+<!-- ── CHATBOT WIDGET ──────────────────────────────────────────────────────── -->
+<button
+  id="chat-fab"
+  aria-label="Asistente Hergon IA"
+  aria-expanded="false"
+  title="Consultar el catálogo con IA"
+>💬</button>
+
+<div id="chat-panel" role="dialog" aria-modal="true" aria-label="Asistente del Catálogo Hergon IA">
+  <div id="chat-header">
+    <div class="chat-header-icon">🤖</div>
+    <div class="chat-header-info">
+      <div class="chat-header-title">Asistente Hergon IA</div>
+      <div class="chat-header-sub">Consulta el catálogo en lenguaje natural</div>
+    </div>
+    <button id="chat-close" aria-label="Cerrar asistente">✕</button>
+  </div>
+  <div class="chat-disclaimer">📖 Este chatbot puede cometer errores, verificar las respuestas</div>
+  <div id="chat-body">
+    <div class="chat-welcome">
+      <span class="chat-welcome-icon">🏗️</span>
+      Pregúntame sobre las herramientas del catálogo.<br>
+      Ej: "¿Qué herramientas hay de costos?" o "¿Qué hace GP-003?"
+    </div>
+  </div>
+  <div id="chat-footer">
+    <textarea
+      id="chat-input"
+      placeholder="Escribe tu pregunta…"
+      rows="1"
+      aria-label="Mensaje al asistente"
+    ></textarea>
+    <button id="chat-send" aria-label="Enviar mensaje">➤</button>
+  </div>
+</div>
+
 <script src="assets/js/firebase-init.js"></script>
 <script src="assets/js/catalog.js"></script>
+<script src="assets/js/chat.js"></script>
 </body>
 </html>

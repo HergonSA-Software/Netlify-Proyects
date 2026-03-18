@@ -391,6 +391,7 @@ async function executeDelete() {
 // ── AI Generator ─────────────────────────────────────────────────────────────
 function openAiModal() {
   document.getElementById('ai-rawtext').value = '';
+  document.getElementById('ai-context').value = '';
   document.getElementById('ai-input-error').style.display = 'none';
   document.getElementById('ai-input-state').style.display = '';
   document.getElementById('ai-loading-state').style.display = 'none';
@@ -406,8 +407,9 @@ function closeAiModal() {
 }
 
 async function generateTool() {
-  const rawText = document.getElementById('ai-rawtext').value.trim();
-  const errEl   = document.getElementById('ai-input-error');
+  const rawText          = document.getElementById('ai-rawtext').value.trim();
+  const additionalContext = document.getElementById('ai-context')?.value?.trim() || '';
+  const errEl            = document.getElementById('ai-input-error');
 
   if (!rawText) {
     errEl.textContent = 'Escribe o pega una descripción antes de generar.';
@@ -431,7 +433,7 @@ async function generateTool() {
         'Content-Type':  'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ rawText, existingCodes }),
+      body: JSON.stringify({ rawText, existingCodes, additionalContext }),
     });
 
     const data = await res.json();

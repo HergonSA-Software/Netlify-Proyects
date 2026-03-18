@@ -1,68 +1,124 @@
-# Catálogo IA — Obras Hergon
+# Catálogo IA - Obras Hergon
 
-Catálogo interno de herramientas de Inteligencia Artificial para Obras Hergon.
+Catálogo interno de herramientas de IA para Obras Hergon.
+
+## Qué incluye
+
+- Vista pública del catálogo en `index.html`
+- Panel de administración en `admin/index.html`
+- Funciones serverless para guardar, eliminar, generar con IA y chat (`netlify/functions`)
 
 ## Arquitectura
 
-```
-JAMstack: HTML estático + Firebase Firestore + Supabase Auth + Netlify Functions
-```
+- Frontend: HTML/CSS/JS estático
+- Base de datos: Firestore (colección `tools`)
+- Backend: Netlify Functions
+- Auth admin: Firebase Auth + validación JWT en funciones protegidas
 
 ## URLs
 
-- **Viewer (público):** https://hergon-catalogo-ia.netlify.app
-- **Admin:** https://hergon-catalogo-ia.netlify.app/admin
-- **Netlify dashboard:** https://app.netlify.com/projects/hergon-catalogo-ia
+- Viewer (público): [https://hergon-catalogo-ia.netlify.app](https://hergon-catalogo-ia.netlify.app)
+- Admin: [https://hergon-catalogo-ia.netlify.app/admin](https://hergon-catalogo-ia.netlify.app/admin)
+- Netlify dashboard: [https://app.netlify.com/projects/hergon-catalogo-ia](https://app.netlify.com/projects/hergon-catalogo-ia)
 
-## Credenciales Admin
+## Funcionalidades principales
 
-- **Email:** admin@hergon.pe
-- **Password:** Hergon2026!
+- Gestión de herramientas desde Admin (crear/editar/eliminar)
+- Generación de fichas con IA (`generate-tool`)
+- Chatbot asistente de solo lectura (`chat-tool`)
+- Filtrado client-side para enviar contexto relevante al chatbot
 
-## Estructura de archivos
+## Estructura del proyecto
 
-```
-hg_catalog/
-├── index.html                   ← Viewer público
+```text
+hg-catalog-ai/
+├── index.html
 ├── admin/
-│   └── index.html               ← Panel admin
+│   └── index.html
 ├── assets/
-│   ├── css/                     ← Estilos separados por módulo
+│   ├── css/
+│   │   ├── variables.css
+│   │   ├── layout.css
+│   │   ├── cards.css
+│   │   ├── modal.css
+│   │   └── chat.css
 │   └── js/
-│       ├── firebase-init.js     ← Firestore REST API helper
-│       ├── supabase-init.js     ← Supabase Auth client
-│       ├── catalog.js           ← Lógica del viewer
-│       └── admin.js             ← Lógica del panel admin
+│       ├── env.js
+│       ├── firebase-init.js
+│       ├── auth.js
+│       ├── catalog.js
+│       ├── admin.js
+│       └── chat.js
 ├── netlify/
 │   └── functions/
-│       ├── save-tool.js         ← POST/PUT herramientas
-│       └── delete-tool.js       ← DELETE herramientas
-├── scripts/
-│   └── seed-firestore.js        ← Migración inicial de datos
+│       ├── save-tool.js
+│       ├── delete-tool.js
+│       ├── generate-tool.js
+│       └── chat-tool.js
+├── .env.example
 ├── netlify.toml
 └── package.json
 ```
 
-## Agregar una nueva herramienta
+## Variables de entorno
 
-1. Ingresar a https://hergon-catalogo-ia.netlify.app/admin
-2. Login con las credenciales admin
-3. Click en **+ Nueva Herramienta**
-4. Completar todos los campos del formulario
-5. Click en **Guardar Herramienta**
+Usa `.env.example` como base.
 
-La herramienta aparece inmediatamente en el catálogo público.
+Variables principales:
 
-## Variables de entorno (Netlify)
+- `FIREBASE_API_KEY`
+- `FIREBASE_SA_KEY`
+- `AI_PROVIDER` (`gemini | openai | anthropic | openrouter`)
+- `GEMINI_API_KEY` (o la API key del proveedor elegido)
+- `AI_MODEL` (opcional)
 
-| Variable | Descripción |
-|---|---|
-| `FIREBASE_SA_KEY` | Service Account JSON de Firebase (proyectoshergon) |
-| `SUPABASE_URL` | URL del proyecto Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service Role Key de Supabase |
+## Desarrollo local
 
-## Base de datos (Firestore)
+Requisitos:
 
-- **Proyecto:** `proyectoshergon`
-- **Colección:** `tools`
-- **Reglas:** Lectura pública, escritura solo via Admin SDK (Netlify Functions)
+- Node.js 18+
+- Netlify CLI (si usarás `netlify dev`)
+
+Instalación de Netlify CLI:
+
+**Opción 1 — Instalar Netlify CLI globalmente (recomendado)**  
+En tu terminal PowerShell, ejecuta:
+
+```bash
+npm install -g netlify-cli
+```
+
+Luego verifica que quedó instalado:
+
+```bash
+netlify --version
+```
+
+Y ya podrás correr:
+
+```bash
+netlify dev
+```
+
+**Opción 2 — Ejecutar sin instalación global**
+
+```bash
+npx netlify dev
+```
+
+Pasos:
+
+1. Instalar dependencias:
+   - `npm install`
+2. Crear `.env` a partir de `.env.example`
+3. Levantar entorno local:
+   - `netlify dev`
+4. Abrir en navegador:
+   - [http://localhost:8888](http://localhost:8888)
+
+## Seguridad
+
+- No subir `.env` ni secretos al repositorio
+- No documentar credenciales de usuarios en el README
+- Las escrituras en Firestore deben pasar por funciones con validación de token
+- El chatbot es solo lectura y no ejecuta operaciones de escritura
