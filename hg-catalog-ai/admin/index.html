@@ -17,8 +17,8 @@
       <div class="login-logo">
         <img src="../assets/img/logo.png" alt="Hergon">
         <div class="login-brand">
-          Obras Hergon
-          <span>Panel de Administración</span>
+          Obras Hergon SA
+          <span>Panel de Administración - Área de IA e Innovación</span>
         </div>
       </div>
       <div class="login-title">Iniciar sesión</div>
@@ -32,6 +32,13 @@
         <div class="form-group">
           <label class="form-label" for="login-password">Contraseña</label>
           <input class="form-input" type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+          <label style="display:flex;align-items:center;gap:0.45rem;margin-top:0.5rem;font-size:0.8rem;color:var(--muted);cursor:pointer;">
+            <input
+              type="checkbox"
+              id="toggle-login-password"
+              onchange="document.getElementById('login-password').type = this.checked ? 'text' : 'password'">
+            Mostrar contraseña
+          </label>
         </div>
         <div class="form-error" id="login-error"></div>
         <button class="btn-primary" type="submit" id="login-btn">Ingresar</button>
@@ -270,10 +277,23 @@
         <textarea
           id="ai-rawtext"
           class="form-input"
-          rows="10"
+          rows="8"
           placeholder="Ej: Herramienta para calcular metrados de muros de concreto. Área: costos. Necesita planos en DWG y Excel. Pasos: 1) Importar DWG a Revit, 2) Extraer tabla de cantidades, 3) Pegar en plantilla Excel…"
           style="width:100%;resize:vertical;font-size:0.85rem"
         ></textarea>
+        <div style="margin-top:0.85rem">
+          <label class="form-label" style="margin-bottom:0.35rem;display:block">
+            Contexto adicional
+            <span style="font-weight:400;color:var(--muted)">(opcional)</span>
+          </label>
+          <textarea
+            id="ai-context"
+            class="form-input"
+            rows="3"
+            placeholder="Ej: Usar modelo Claude Sonnet 4.6. El proyecto en Claude se llama 'Gestión OxI'. Incluir MCP filesystem. El link del proyecto Claude es https://claude.ai/project/…"
+            style="width:100%;resize:vertical;font-size:0.85rem"
+          ></textarea>
+        </div>
         <div id="ai-input-error" style="color:#ef4444;font-size:0.8rem;margin-top:0.5rem;display:none"></div>
       </div>
 
