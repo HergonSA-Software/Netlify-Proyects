@@ -64,9 +64,12 @@
           <div class="section-title">Herramientas del Catálogo</div>
           <div class="section-sub" id="admin-tool-count">Cargando…</div>
         </div>
-        <button class="btn-icon" style="padding:0.55rem 1.25rem;font-size:0.8rem" onclick="openForm()">
-          + Nueva Herramienta
-        </button>
+        <div style="display:flex;gap:0.6rem;align-items:center">
+          <button class="btn-ai" onclick="openAiModal()">✨ Generar con IA</button>
+          <button class="btn-icon" style="padding:0.55rem 1.25rem;font-size:0.8rem" onclick="openForm()">
+            + Nueva Herramienta
+          </button>
+        </div>
       </div>
 
       <!-- Tools table -->
@@ -246,6 +249,48 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ── AI GENERATOR MODAL ────────────────────────────────────────────────── -->
+<div class="form-overlay" id="ai-overlay">
+  <div class="form-modal" style="max-width:640px">
+    <div class="form-modal-header">
+      <span class="form-modal-title">✨ Generar Herramienta con IA</span>
+      <button class="form-modal-close" onclick="closeAiModal()">✕</button>
+    </div>
+    <div class="form-modal-body" style="padding:1.5rem">
+
+      <!-- Input state -->
+      <div id="ai-input-state">
+        <p style="margin:0 0 1rem;color:var(--muted);font-size:0.82rem;line-height:1.5">
+          Describe la herramienta como quieras: nombre, área, qué hace, requisitos, pasos, links…
+          La IA generará el registro estructurado listo para revisar y subir.
+        </p>
+        <textarea
+          id="ai-rawtext"
+          class="form-input"
+          rows="10"
+          placeholder="Ej: Herramienta para calcular metrados de muros de concreto. Área: costos. Necesita planos en DWG y Excel. Pasos: 1) Importar DWG a Revit, 2) Extraer tabla de cantidades, 3) Pegar en plantilla Excel…"
+          style="width:100%;resize:vertical;font-size:0.85rem"
+        ></textarea>
+        <div id="ai-input-error" style="color:#ef4444;font-size:0.8rem;margin-top:0.5rem;display:none"></div>
+      </div>
+
+      <!-- Loading state -->
+      <div id="ai-loading-state" style="display:none;text-align:center;padding:2.5rem 0">
+        <div style="font-size:2rem;margin-bottom:0.75rem">⚙️</div>
+        <div style="font-weight:600;margin-bottom:0.25rem">Analizando con IA…</div>
+        <div style="color:var(--muted);font-size:0.82rem">Esto puede tardar unos segundos.</div>
+      </div>
+
+    </div>
+    <div class="form-modal-footer" id="ai-footer">
+      <button type="button" class="btn-secondary" onclick="closeAiModal()">Cancelar</button>
+      <button type="button" class="btn-primary" style="width:auto;padding:0.6rem 1.5rem" onclick="generateTool()">
+        ✨ Generar
+      </button>
+    </div>
   </div>
 </div>
 

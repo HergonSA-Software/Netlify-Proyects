@@ -134,10 +134,14 @@ function escHtml(s) {
 }
 
 // ── Tool Form ─────────────────────────────────────────────────────────────────
-function openForm(id = null) {
+// payload (optional) — pre-fills the form with AI-generated data
+function openForm(id = null, payload = null) {
   editingId = id;
-  const t = id ? tools.find(x => x.id === id) : null;
-  document.getElementById('form-modal-title').textContent = id ? 'Editar Herramienta' : 'Nueva Herramienta';
+  const t = payload || (id ? tools.find(x => x.id === id) : null);
+  const isAiGenerated = !!payload && !id;
+
+  document.getElementById('form-modal-title').textContent =
+    isAiGenerated ? '✨ Revisar Herramienta Generada' : (id ? 'Editar Herramienta' : 'Nueva Herramienta');
 
   // Basic fields
   setVal('f-code',   t?.code   || '');
@@ -384,11 +388,80 @@ async function executeDelete() {
   }
 }
 
+// ── AI Generator ─────────────────────────────────────────────────────────────
+function openAiModal() {
+  document.getElementById('ai-rawtext').value = '';
+  document.getElementById('ai-input-error').style.display = 'none';
+  document.getElementById('ai-input-state').style.display = '';
+  document.getElementById('ai-loading-state').style.display = 'none';
+  document.getElementById('ai-footer').style.display = '';
+  document.getElementById('ai-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('ai-rawtext').focus(), 80);
+}
+
+function closeAiModal() {
+  document.getElementById('ai-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function generateTool() {
+  const rawText = document.getElementById('ai-rawtext').value.trim();
+  const errEl   = document.getElementById('ai-input-error');
+
+  if (!rawText) {
+    errEl.textContent = 'Escribe o pega una descripción antes de generar.';
+    errEl.style.display = '';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  // Switch to loading state
+  document.getElementById('ai-input-state').style.display = 'none';
+  document.getElementById('ai-loading-state').style.display = '';
+  document.getElementById('ai-footer').style.display = 'none';
+
+  const token        = Auth.getToken();
+  const existingCodes = tools.map(t => t.code).filter(Boolean);
+
+  try {
+    const res = await fetch(`${API_BASE}/generate-tool`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ rawText, existingCodes }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || `Error ${res.status}`);
+    }
+
+    // Success — close AI modal and pre-load the standard form
+    closeAiModal();
+    openForm(null, data.payload);
+    showToast('Herramienta generada — revisa y confirma los campos ✓');
+
+  } catch (err) {
+    // Restore input state so the user can try again or edit manually
+    document.getElementById('ai-loading-state').style.display = 'none';
+    document.getElementById('ai-input-state').style.display = '';
+    document.getElementById('ai-footer').style.display = '';
+    errEl.textContent = `Error: ${err.message}. Puedes editar manualmente.`;
+    errEl.style.display = '';
+    showToast('Error al generar con IA: ' + err.message, 'error');
+  }
+}
+
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeForm();
     cancelDelete();
+    closeAiModal();
   }
 });
 
