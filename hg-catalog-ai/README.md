@@ -77,7 +77,34 @@ Variables principales:
 Requisitos:
 
 - Node.js 18+
-- Netlify CLI
+- Netlify CLI (si usarás `netlify dev`)
+
+Instalación de Netlify CLI:
+
+**Opción 1 — Instalar Netlify CLI globalmente (recomendado)**  
+En tu terminal PowerShell, ejecuta:
+
+```bash
+npm install -g netlify-cli
+```
+
+Luego verifica que quedó instalado:
+
+```bash
+netlify --version
+```
+
+Y ya podrás correr:
+
+```bash
+netlify dev
+```
+
+**Opción 2 — Ejecutar sin instalación global**
+
+```bash
+npx netlify dev
+```
 
 Pasos:
 
