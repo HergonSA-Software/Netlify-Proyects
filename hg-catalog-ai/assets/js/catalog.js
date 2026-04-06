@@ -1,38 +1,78 @@
 // ── Catalog viewer logic ──────────────────────────────────────────────────────
 
-const AREA_COLORS = {
-  'gestión de proyectos': '#2563eb',
-  'bim':                  '#7c3aed',
-  'arquitectura':         '#0891b2',
-  'costos':               '#d97706',
-  'rrhh':                 '#059669',
-  'administración':       '#64748b',
-  'compras':              '#e11d48',
-  'coordinación':         '#0f766e',
-  'ssoma':                '#dc2626',
-  'gestión obra':         '#7e5bef',
-  'todas':                '#1e4d9b',
-};
+const CATALOG_API_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:8888/.netlify/functions'
+  : '/.netlify/functions';
 
-function areaLabel(a) {
-  const map = {
-    'gestión de proyectos': 'Gestión Proyectos',
-    'bim': 'BIM', 'arquitectura': 'Arquitectura',
-    'costos': 'Costos', 'rrhh': 'RRHH',
-    'administración': 'Administración', 'compras': 'Compras',
-    'coordinación': 'Coordinación',
-    'ssoma': 'SSOMA', 'gestión obra': 'Gestión Obra',
-    'todas': 'Todas las áreas',
-  };
-  return map[a] || a;
+// ── Sanitización HTML — previene XSS al insertar datos de Firestore en el DOM ─
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-// ── State ──────────────────────────────────────────────────────────────────
-let allTools  = [];
+// ── State ─────────────────────────────────────────────────────────────────────
+let areasData  = [];        // loaded from Firestore via /areas
+let allTools   = [];
 let activeArea = 'todas';
 let currentPromptText = '';
 
-// ── Counts ──────────────────────────────────────────────────────────────────
+// Exposed on window so chat.js can build AREA_KEYWORDS without a second fetch
+window.areasData = areasData;
+
+// ── Area helpers ──────────────────────────────────────────────────────────────
+function getAreaColor(key) {
+  if (key === 'todas') return '#1e4d9b';
+  const a = areasData.find(x => x.key === key);
+  return a ? a.color : '#64748b';
+}
+
+function areaLabel(key) {
+  if (key === 'todas') return 'Todas las áreas';
+  const a = areasData.find(x => x.key === key);
+  return a ? a.label : key;
+}
+
+// ── Build sidebar dynamically ─────────────────────────────────────────────────
+function buildSidebar() {
+  const container = document.getElementById('area-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // "Todas" button
+  const todaBtn = document.createElement('button');
+  todaBtn.className = `area-btn${activeArea === 'todas' ? ' active' : ''}`;
+  todaBtn.dataset.area = 'todas';
+  todaBtn.onclick = () => setArea('todas');
+  todaBtn.innerHTML = `
+    <div class="area-icon">🗂️</div>
+    <span class="area-name">Todas</span>
+    <span class="area-count" id="cnt-todas">0</span>`;
+  container.appendChild(todaBtn);
+
+  const hr = document.createElement('hr');
+  hr.className = 'area-divider';
+  container.appendChild(hr);
+
+  // One button per area
+  areasData.forEach(area => {
+    const btn = document.createElement('button');
+    btn.className = `area-btn${activeArea === area.key ? ' active' : ''}`;
+    btn.dataset.area = area.key;
+    btn.onclick = () => setArea(area.key);
+    btn.innerHTML = `
+      <div class="area-icon">${area.icon || '🔧'}</div>
+      <span class="area-name">${area.label}</span>
+      <span class="area-count" id="cnt-area-${area.id}">0</span>`;
+    container.appendChild(btn);
+  });
+}
+
+// ── Counts ────────────────────────────────────────────────────────────────────
 function countByArea(area) {
   if (area === 'todas') return allTools.length;
   return allTools.filter(t =>
@@ -42,26 +82,16 @@ function countByArea(area) {
 }
 
 function updateCounts() {
-  const ids = {
-    'todas':                 'cnt-todas',
-    'gestión de proyectos':  'cnt-gestion',
-    'administración':        'cnt-admin',
-    'compras':               'cnt-compras',
-    'costos':                'cnt-costos',
-    'bim':                   'cnt-bim',
-    'arquitectura':          'cnt-arq',
-    'coordinación':          'cnt-coord',
-    'ssoma':                 'cnt-ssoma',
-    'gestión obra':          'cnt-gobra',
-    'rrhh':                  'cnt-rrhh',
-  };
-  for (const [area, id] of Object.entries(ids)) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = countByArea(area);
-  }
+  const totalEl = document.getElementById('cnt-todas');
+  if (totalEl) totalEl.textContent = allTools.length;
+
+  areasData.forEach(area => {
+    const el = document.getElementById(`cnt-area-${area.id}`);
+    if (el) el.textContent = countByArea(area.key);
+  });
 }
 
-// ── Grid ────────────────────────────────────────────────────────────────────
+// ── Grid ──────────────────────────────────────────────────────────────────────
 function renderGrid() {
   const grid = document.getElementById('tool-grid');
   const filtered = activeArea === 'todas'
@@ -87,7 +117,7 @@ function renderGrid() {
 
   grid.innerHTML = filtered.map((t) => {
     const idx   = allTools.indexOf(t);
-    const color = AREA_COLORS[t.area] || '#1e4d9b';
+    const color = getAreaColor(t.area);
     const allAreas = [t.area, t.area2, t.area3, t.area4].filter(Boolean);
     const tagsHtml = allAreas.map((a, ai) =>
       `<span class="card-tag ${ai === 0 ? 'primary' : 'secondary'}">${areaLabel(a)}</span>`
@@ -123,10 +153,10 @@ function setArea(area) {
   if (window.innerWidth <= 600) closeSidebar();
 }
 
-// ── Modal ───────────────────────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────────────────
 function openModal(idx) {
   const t = allTools[idx];
-  const color = AREA_COLORS[t.area] || '#1e4d9b';
+  const color = getAreaColor(t.area);
   currentPromptText = t.prompt || '';
 
   const modal = document.getElementById('modal');
@@ -150,20 +180,20 @@ function openModal(idx) {
 
   document.getElementById('m-flow').innerHTML = (t.flow || []).map(f =>
     `<div class="m-flow-cell">
-      <div class="m-flow-stage">${f.stage}</div>
-      <div class="m-flow-main">${f.main}</div>
-      <div class="m-flow-sub">${f.sub}</div>
+      <div class="m-flow-stage">${escHtml(f.stage)}</div>
+      <div class="m-flow-main">${escHtml(f.main)}</div>
+      <div class="m-flow-sub">${escHtml(f.sub)}</div>
     </div>`).join('');
 
   document.getElementById('m-steps').innerHTML = (t.steps || []).map((s, i) => {
     const tagHtml = s.tag
-      ? `<span class="install-tag${s.tagColor === 'orange' ? ' orange' : ''}">${s.tag}</span>`
+      ? `<span class="install-tag${s.tagColor === 'orange' ? ' orange' : ''}">${escHtml(s.tag)}</span>`
       : '';
     return `<div class="install-step">
       <div class="install-num">${i + 1}</div>
       <div class="install-content">
-        <div class="install-title">${s.title}${tagHtml}</div>
-        <div class="install-desc">${s.desc}</div>
+        <div class="install-title">${escHtml(s.title)}${tagHtml}</div>
+        <div class="install-desc">${escHtml(s.desc)}</div>
       </div>
     </div>`;
   }).join('');
@@ -185,32 +215,33 @@ function openModal(idx) {
     costSection.style.display = '';
     const cn = t.costNotes;
     const rows = (cn.table?.rows || []).map(r => {
-      // Preserve all columns (including empty) to keep table alignment intact
       const cells = Array.isArray(r) ? r : [r.c0||'', r.c1||'', r.c2||'', r.c3||''];
       return `<tr>${cells.map((cell, ci) =>
         `<td>${ci === 2 ? `<span class="badge-cost">${cell}</span>` : cell}</td>`
       ).join('')}</tr>`;
     }).join('');
     document.getElementById('m-costnotes').innerHTML = `
-      <p class="cost-intro">${cn.intro || ''}</p>
+      <p class="cost-intro">${escHtml(cn.intro || '')}</p>
       <table class="cost-table">
         <thead><tr>${(cn.table?.headers || []).map(h => `<th>${h}</th>`).join('')}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      ${cn.warning ? `<div class="cost-warning">⚠️ ${cn.warning}</div>` : ''}`;
+      ${cn.warning ? `<div class="cost-warning">⚠️ ${escHtml(cn.warning)}</div>` : ''}`;
   } else {
     costSection.style.display = 'none';
   }
 
-  document.getElementById('m-resources').innerHTML = (t.resources || []).map(r =>
-    `<a class="resource-item" href="${r.url}" target="_blank" rel="noopener">
-      <div class="resource-icon">${r.icon}</div>
+  document.getElementById('m-resources').innerHTML = (t.resources || []).map(r => {
+    const safeUrl = /^https?:\/\//i.test(r.url) ? r.url : '#';
+    return `<a class="resource-item" href="${escHtml(safeUrl)}" target="_blank" rel="noopener">
+      <div class="resource-icon">${escHtml(r.icon)}</div>
       <div class="resource-info">
-        <div class="resource-name">${r.name}</div>
-        <div class="resource-url">${r.url}</div>
+        <div class="resource-name">${escHtml(r.name)}</div>
+        <div class="resource-url">${escHtml(safeUrl)}</div>
       </div>
       <div class="resource-arrow">↗</div>
-    </a>`).join('');
+    </a>`;
+  }).join('');
 
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -242,7 +273,6 @@ function copyPrompt() {
   };
   if (navigator.clipboard?.writeText) {
     navigator.clipboard.writeText(currentPromptText).then(applySuccess).catch(() => {
-      // Fallback for non-HTTPS or permissions denied
       const ta = document.createElement('textarea');
       ta.value = currentPromptText;
       ta.style.position = 'fixed'; ta.style.opacity = '0';
@@ -274,7 +304,7 @@ function toggleExpand() {
   }
 }
 
-// ── Mobile sidebar ───────────────────────────────────────────────────────────
+// ── Mobile sidebar ────────────────────────────────────────────────────────────
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-overlay').classList.toggle('open');
@@ -289,9 +319,25 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModalDirect();
 });
 
-// ── Init: load tools from Firestore ──────────────────────────────────────────
+// ── Init: load areas then tools ───────────────────────────────────────────────
 (async () => {
   renderSkeletons(6);
+
+  // 1. Load areas from Firestore (fast, small payload)
+  try {
+    const res = await fetch(`${CATALOG_API_BASE}/areas`);
+    if (res.ok) {
+      const data = await res.json();
+      areasData.push(...(data.areas || []));
+      window.areasData = areasData; // refresh reference for chat.js
+    }
+  } catch (err) {
+    console.warn('No se pudieron cargar las áreas:', err.message);
+  }
+
+  buildSidebar();
+
+  // 2. Load tools
   try {
     allTools = await fetchAllTools();
   } catch (err) {
@@ -304,6 +350,7 @@ document.addEventListener('keydown', e => {
       </div>`;
     return;
   }
+
   updateCounts();
   renderGrid();
 })();

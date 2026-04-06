@@ -6,6 +6,18 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Rate limit: chatbot público — 10 mensajes/min por IP
+# Debe ir ANTES del wildcard /api/* para que tenga precedencia
+[[redirects]]
+  from   = "/api/chat-tool"
+  to     = "/.netlify/functions/chat-tool"
+  status = 200
+  force  = true
+  [redirects.rate_limit]
+    window_limit = 10
+    window_size  = 60
+    aggregate_by = ["ip", "domain"]
+
 # Redirect /api/* to Netlify Functions
 [[redirects]]
   from   = "/api/*"

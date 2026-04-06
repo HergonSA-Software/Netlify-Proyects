@@ -4,25 +4,8 @@ const API_BASE = window.location.hostname === 'localhost'
   ? 'http://localhost:8888/.netlify/functions'
   : '/.netlify/functions';
 
-const AREAS = [
-  'gestión de proyectos','costos','bim','arquitectura',
-  'ssoma','gestión obra','rrhh','administración','compras','coordinación',
-];
-
-const AREA_COLORS = {
-  'gestión de proyectos': '#2563eb',
-  'bim':                  '#7c3aed',
-  'arquitectura':         '#0891b2',
-  'costos':               '#d97706',
-  'rrhh':                 '#059669',
-  'administración':       '#64748b',
-  'compras':              '#e11d48',
-  'coordinación':         '#0f766e',
-  'ssoma':                '#dc2626',
-  'gestión obra':         '#7e5bef',
-};
-
-let tools = [];
+let tools     = [];
+let areasData = [];
 let editingId = null;
 let deletingId = null;
 
@@ -32,7 +15,6 @@ function showToast(msg, type = 'success') {
   t.className = `toast ${type}`;
   t.textContent = msg;
   document.body.appendChild(t);
-  // Errors stay longer so the user can read them
   setTimeout(() => t.remove(), type === 'error' ? 6000 : 3000);
 }
 
@@ -43,13 +25,13 @@ function setLoading(on) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-  // Check auth
   const session = Auth.init();
   if (!session) {
     showView('login');
     return;
   }
   showView('admin');
+  await loadAreas();
   await loadTools();
 }
 
@@ -73,6 +55,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   try {
     await Auth.signIn(email, password);
     showView('admin');
+    await loadAreas();
     await loadTools();
   } catch (err) {
     errEl.textContent = err.message;
@@ -85,7 +68,50 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 async function logout() {
   await Auth.signOut();
   tools = [];
+  areasData = [];
   showView('login');
+}
+
+// ── Load areas ────────────────────────────────────────────────────────────────
+async function loadAreas() {
+  try {
+    const res = await fetch(`${API_BASE}/areas`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    areasData = data.areas || [];
+    buildAreaSelects();
+    renderAreasTable();
+    const countEl = document.getElementById('admin-area-count');
+    if (countEl) countEl.textContent = `${areasData.length} área${areasData.length !== 1 ? 's' : ''}`;
+  } catch (err) {
+    showToast('Error cargando áreas: ' + err.message, 'error');
+  }
+}
+
+// ── Build area <select> options ───────────────────────────────────────────────
+function buildAreaSelects() {
+  const selectIds = ['f-area', 'f-area2', 'f-area3', 'f-area4'];
+  selectIds.forEach((id, idx) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+
+    // Preserve current value before rebuild
+    const current = sel.value;
+
+    sel.innerHTML = idx === 0
+      ? '<option value="">Seleccionar área…</option>'
+      : '<option value="">— ninguna —</option>';
+
+    areasData.forEach(area => {
+      const opt = document.createElement('option');
+      opt.value       = area.key;
+      opt.textContent = area.label;
+      sel.appendChild(opt);
+    });
+
+    // Restore value if it still exists
+    if (current) sel.value = current;
+  });
 }
 
 // ── Load tools ────────────────────────────────────────────────────────────────
@@ -113,11 +139,13 @@ function renderTable() {
     return;
   }
   tbody.innerHTML = tools.map(t => {
-    const color = AREA_COLORS[t.area] || '#64748b';
+    const areaObj = areasData.find(a => a.key === t.area);
+    const color = areaObj ? areaObj.color : '#64748b';
+    const label = areaObj ? areaObj.label : t.area;
     return `<tr>
       <td><span class="tool-code-badge">${escHtml(t.code)}</span></td>
       <td style="font-weight:600;max-width:220px">${escHtml(t.title)}</td>
-      <td><span class="area-pill" style="background:${color}">${escHtml(t.area)}</span></td>
+      <td><span class="area-pill" style="background:${color}">${escHtml(label)}</span></td>
       <td style="font-size:0.72rem;color:var(--muted);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(t.desc?.substring(0,80) || '')}…</td>
       <td>
         <div class="table-actions">
@@ -134,7 +162,6 @@ function escHtml(s) {
 }
 
 // ── Tool Form ─────────────────────────────────────────────────────────────────
-// payload (optional) — pre-fills the form with AI-generated data
 function openForm(id = null, payload = null) {
   editingId = id;
   const t = payload || (id ? tools.find(x => x.id === id) : null);
@@ -143,7 +170,6 @@ function openForm(id = null, payload = null) {
   document.getElementById('form-modal-title').textContent =
     isAiGenerated ? '✨ Revisar Herramienta Generada' : (id ? 'Editar Herramienta' : 'Nueva Herramienta');
 
-  // Basic fields
   setVal('f-code',   t?.code   || '');
   setVal('f-title',  t?.title  || '');
   setVal('f-area',   t?.area   || '');
@@ -153,13 +179,9 @@ function openForm(id = null, payload = null) {
   setVal('f-desc',   t?.desc   || '');
   setVal('f-prompt', t?.prompt || '');
 
-  // Dynamic reqs
-  renderDynamicList('reqs-list', t?.reqs || [], renderReqItem);
-  // Dynamic flow
-  renderDynamicList('flow-list', t?.flow || [], renderFlowItem);
-  // Dynamic steps
-  renderDynamicList('steps-list', t?.steps || [], renderStepItem);
-  // Dynamic resources
+  renderDynamicList('reqs-list',      t?.reqs      || [], renderReqItem);
+  renderDynamicList('flow-list',      t?.flow      || [], renderFlowItem);
+  renderDynamicList('steps-list',     t?.steps     || [], renderStepItem);
   renderDynamicList('resources-list', t?.resources || [], renderResourceItem);
 
   document.getElementById('form-overlay').classList.add('open');
@@ -195,7 +217,6 @@ function removeListItem(btn) {
   btn.closest('.dynamic-item').remove();
 }
 
-// Req item: supports both {key, value} objects (Firestore) and legacy [key, val] arrays
 function renderReqItem(item, i) {
   const k = Array.isArray(item) ? (item[0] || '') : (item.key   || '');
   const v = Array.isArray(item) ? (item[1] || '') : (item.value || '');
@@ -208,7 +229,6 @@ function renderReqItem(item, i) {
   return d;
 }
 
-// Flow item: {stage, main, sub}
 function renderFlowItem(item, i) {
   const d = document.createElement('div');
   d.className = 'dynamic-item';
@@ -220,7 +240,6 @@ function renderFlowItem(item, i) {
   return d;
 }
 
-// Step item: {title, tag, tagColor, desc}
 function renderStepItem(item, i) {
   const d = document.createElement('div');
   d.className = 'dynamic-item';
@@ -239,7 +258,6 @@ function renderStepItem(item, i) {
   return d;
 }
 
-// Resource item: {icon, name, desc, url}
 function renderResourceItem(item, i) {
   const d = document.createElement('div');
   d.className = 'dynamic-item';
@@ -257,8 +275,6 @@ function renderResourceItem(item, i) {
   return d;
 }
 
-// Collect dynamic list values
-// Returns [{key, value}] — Firestore doesn't allow nested arrays
 function collectReqs() {
   return [...document.querySelectorAll('#reqs-list .dynamic-item')].map(d => ({
     key:   d.querySelector('[data-req-key]').value.trim(),
@@ -388,7 +404,7 @@ async function executeDelete() {
   }
 }
 
-// ── AI Generator ─────────────────────────────────────────────────────────────
+// ── AI Generator ──────────────────────────────────────────────────────────────
 function openAiModal() {
   document.getElementById('ai-rawtext').value = '';
   document.getElementById('ai-context').value = '';
@@ -407,9 +423,9 @@ function closeAiModal() {
 }
 
 async function generateTool() {
-  const rawText          = document.getElementById('ai-rawtext').value.trim();
+  const rawText           = document.getElementById('ai-rawtext').value.trim();
   const additionalContext = document.getElementById('ai-context')?.value?.trim() || '';
-  const errEl            = document.getElementById('ai-input-error');
+  const errEl             = document.getElementById('ai-input-error');
 
   if (!rawText) {
     errEl.textContent = 'Escribe o pega una descripción antes de generar.';
@@ -418,12 +434,11 @@ async function generateTool() {
   }
   errEl.style.display = 'none';
 
-  // Switch to loading state
   document.getElementById('ai-input-state').style.display = 'none';
   document.getElementById('ai-loading-state').style.display = '';
   document.getElementById('ai-footer').style.display = 'none';
 
-  const token        = Auth.getToken();
+  const token         = Auth.getToken();
   const existingCodes = tools.map(t => t.code).filter(Boolean);
 
   try {
@@ -437,18 +452,12 @@ async function generateTool() {
     });
 
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
 
-    if (!res.ok) {
-      throw new Error(data.error || `Error ${res.status}`);
-    }
-
-    // Success — close AI modal and pre-load the standard form
     closeAiModal();
     openForm(null, data.payload);
     showToast('Herramienta generada — revisa y confirma los campos ✓');
-
   } catch (err) {
-    // Restore input state so the user can try again or edit manually
     document.getElementById('ai-loading-state').style.display = 'none';
     document.getElementById('ai-input-state').style.display = '';
     document.getElementById('ai-footer').style.display = '';
@@ -458,12 +467,156 @@ async function generateTool() {
   }
 }
 
+// ── Areas management ──────────────────────────────────────────────────────────
+let editingAreaId   = null;
+let deletingAreaId  = null;
+
+function renderAreasTable() {
+  const tbody = document.getElementById('areas-tbody');
+  if (!tbody) return;
+  if (areasData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--muted)">Sin áreas registradas.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = areasData.map(a => `
+    <tr>
+      <td style="font-size:1.3rem;text-align:center">${escHtml(a.icon || '🔧')}</td>
+      <td style="font-size:0.78rem;color:var(--muted)">${escHtml(a.key)}</td>
+      <td style="font-weight:600">${escHtml(a.label)}</td>
+      <td><span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:${escHtml(a.color || '#64748b')};vertical-align:middle"></span> <code style="font-size:0.72rem">${escHtml(a.color || '')}</code></td>
+      <td><code style="font-size:0.78rem">${escHtml(a.codePrefix || '—')}</code></td>
+      <td style="text-align:center">${a.order ?? '—'}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-icon" onclick="openAreaForm('${a.id}')">✏️</button>
+          <button class="btn-danger" onclick="confirmAreaDelete('${a.id}','${escHtml(a.label)}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openAreaForm(id = null) {
+  editingAreaId = id;
+  const a = id ? areasData.find(x => x.id === id) : null;
+
+  document.getElementById('area-form-title').textContent = id ? 'Editar Área' : 'Nueva Área';
+  setVal('fa-key',      a?.key        || '');
+  setVal('fa-label',    a?.label      || '');
+  setVal('fa-icon',     a?.icon       || '🔧');
+  setVal('fa-color',    a?.color      || '#64748b');
+  setVal('fa-prefix',   a?.codePrefix || '');
+  setVal('fa-keywords', (a?.keywords || []).join(', '));
+  setVal('fa-order',    a?.order      ?? 99);
+
+  const keyInput = document.getElementById('fa-key');
+  if (keyInput) keyInput.readOnly = !!id; // key is immutable once created
+
+  document.getElementById('area-form-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAreaForm() {
+  document.getElementById('area-form-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  editingAreaId = null;
+}
+
+document.getElementById('area-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const key      = document.getElementById('fa-key').value.trim().toLowerCase();
+  const label    = document.getElementById('fa-label').value.trim();
+  const icon     = document.getElementById('fa-icon').value.trim() || '🔧';
+  const color    = document.getElementById('fa-color').value.trim() || '#64748b';
+  const prefix   = document.getElementById('fa-prefix').value.trim().toUpperCase();
+  const kwRaw    = document.getElementById('fa-keywords').value.trim();
+  const keywords = kwRaw ? kwRaw.split(',').map(k => k.trim()).filter(Boolean) : [];
+  const order    = parseInt(document.getElementById('fa-order').value, 10) || 99;
+
+  if (!key || !label) {
+    showToast('Clave y nombre son requeridos', 'error');
+    return;
+  }
+
+  const token = Auth.getToken();
+  setLoading(true);
+
+  try {
+    let res;
+    if (editingAreaId) {
+      res = await fetch(`${API_BASE}/areas`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id: editingAreaId, label, icon, color, codePrefix: prefix, keywords, order }),
+      });
+    } else {
+      res = await fetch(`${API_BASE}/areas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ key, label, icon, color, codePrefix: prefix, keywords, order }),
+      });
+    }
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Error al guardar área');
+    }
+
+    showToast(editingAreaId ? 'Área actualizada ✓' : 'Área creada ✓');
+    closeAreaForm();
+    await loadAreas();
+    buildAreaSelects();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+function confirmAreaDelete(id, label) {
+  deletingAreaId = id;
+  document.getElementById('confirm-area-label').textContent = label;
+  document.getElementById('area-confirm-overlay').classList.add('open');
+}
+
+function cancelAreaDelete() {
+  deletingAreaId = null;
+  document.getElementById('area-confirm-overlay').classList.remove('open');
+}
+
+async function executeAreaDelete() {
+  if (!deletingAreaId) return;
+  const id    = deletingAreaId;
+  const token = Auth.getToken();
+  cancelAreaDelete();
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_BASE}/areas?id=${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Delete failed');
+    }
+    showToast('Área eliminada ✓');
+    await loadAreas();
+    buildAreaSelects();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeForm();
     cancelDelete();
     closeAiModal();
+    closeAreaForm();
+    cancelAreaDelete();
   }
 });
 

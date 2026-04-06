@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/logo.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../assets/img/logo.png">
+<link rel="apple-touch-icon" href="../assets/img/logo.png">
 <title>Admin — Catálogo IA Hergon</title>
 <link rel="stylesheet" href="../assets/css/variables.css">
 <link rel="stylesheet" href="../assets/css/admin.css">
@@ -96,6 +99,38 @@
           </tbody>
         </table>
       </div>
+
+      <!-- ── Gestionar Áreas ─────────────────────────────────────────────── -->
+      <div style="margin-top:2.5rem">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Áreas de Trabajo</div>
+            <div class="section-sub" id="admin-area-count">Cargando…</div>
+          </div>
+          <button class="btn-icon" style="padding:0.55rem 1.25rem;font-size:0.8rem" onclick="openAreaForm()">
+            + Nueva Área
+          </button>
+        </div>
+        <div class="tools-table-wrap">
+          <table class="tools-table">
+            <thead>
+              <tr>
+                <th style="width:48px">Ícono</th>
+                <th>Clave</th>
+                <th>Nombre</th>
+                <th>Color</th>
+                <th>Prefijo</th>
+                <th style="width:60px;text-align:center">Orden</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="areas-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--muted)">Cargando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -122,16 +157,7 @@
             <label class="form-label">Área principal *</label>
             <select class="form-input" id="f-area" required>
               <option value="">Seleccionar área…</option>
-              <option value="gestión de proyectos">Gestión de Proyectos</option>
-              <option value="costos">Costos</option>
-              <option value="bim">BIM</option>
-              <option value="arquitectura">Arquitectura</option>
-              <option value="ssoma">SSOMA</option>
-              <option value="gestión obra">Gestión Obra</option>
-              <option value="rrhh">RRHH</option>
-              <option value="administración">Administración</option>
-              <option value="compras">Compras</option>
-              <option value="coordinación">Coordinación</option>
+              <!-- Options populated dynamically by admin.js -->
             </select>
           </div>
           <div class="form-group form-group-full">
@@ -142,48 +168,21 @@
             <label class="form-label">Área secundaria</label>
             <select class="form-input" id="f-area2">
               <option value="">— ninguna —</option>
-              <option value="gestión de proyectos">Gestión de Proyectos</option>
-              <option value="costos">Costos</option>
-              <option value="bim">BIM</option>
-              <option value="arquitectura">Arquitectura</option>
-              <option value="ssoma">SSOMA</option>
-              <option value="gestión obra">Gestión Obra</option>
-              <option value="rrhh">RRHH</option>
-              <option value="administración">Administración</option>
-              <option value="compras">Compras</option>
-              <option value="coordinación">Coordinación</option>
+              <!-- Options populated dynamically by admin.js -->
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">Área terciaria</label>
             <select class="form-input" id="f-area3">
               <option value="">— ninguna —</option>
-              <option value="gestión de proyectos">Gestión de Proyectos</option>
-              <option value="costos">Costos</option>
-              <option value="bim">BIM</option>
-              <option value="arquitectura">Arquitectura</option>
-              <option value="ssoma">SSOMA</option>
-              <option value="gestión obra">Gestión Obra</option>
-              <option value="rrhh">RRHH</option>
-              <option value="administración">Administración</option>
-              <option value="compras">Compras</option>
-              <option value="coordinación">Coordinación</option>
+              <!-- Options populated dynamically by admin.js -->
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">Área cuaternaria</label>
             <select class="form-input" id="f-area4">
               <option value="">— ninguna —</option>
-              <option value="gestión de proyectos">Gestión de Proyectos</option>
-              <option value="costos">Costos</option>
-              <option value="bim">BIM</option>
-              <option value="arquitectura">Arquitectura</option>
-              <option value="ssoma">SSOMA</option>
-              <option value="gestión obra">Gestión Obra</option>
-              <option value="rrhh">RRHH</option>
-              <option value="administración">Administración</option>
-              <option value="compras">Compras</option>
-              <option value="coordinación">Coordinación</option>
+              <!-- Options populated dynamically by admin.js -->
             </select>
           </div>
         </div>
@@ -328,6 +327,70 @@
       <button class="btn-danger" onclick="executeDelete()" style="padding:0.55rem 1.25rem">
         Sí, eliminar
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── AREAS FORM MODAL ──────────────────────────────────────────────────────── -->
+<div class="form-overlay" id="area-form-overlay">
+  <div class="form-modal" style="max-width:480px">
+    <div class="form-modal-header">
+      <span class="form-modal-title" id="area-form-title">Nueva Área</span>
+      <button class="form-modal-close" onclick="closeAreaForm()">✕</button>
+    </div>
+    <form id="area-form">
+      <div class="form-modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Clave (key) * <span style="font-weight:400;color:var(--muted);font-size:0.78rem">— minúsculas, única, no editable luego</span></label>
+            <input class="form-input" id="fa-key" placeholder="ej: logística" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre visible *</label>
+            <input class="form-input" id="fa-label" placeholder="ej: Logística" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ícono (emoji)</label>
+            <input class="form-input" id="fa-icon" placeholder="🔧" value="🔧" style="font-size:1.2rem">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Color (hex)</label>
+            <input class="form-input" id="fa-color" placeholder="#64748b" value="#64748b">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prefijo de código <span style="font-weight:400;color:var(--muted);font-size:0.78rem">— ej: LOG</span></label>
+            <input class="form-input" id="fa-prefix" placeholder="LOG">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Orden en sidebar</label>
+            <input class="form-input" type="number" id="fa-order" value="99" min="1">
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Keywords para chatbot <span style="font-weight:400;color:var(--muted);font-size:0.78rem">— separados por coma</span></label>
+            <input class="form-input" id="fa-keywords" placeholder="logística, proveedor, almacén, cotización">
+          </div>
+        </div>
+      </div>
+      <div class="form-modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeAreaForm()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="width:auto;padding:0.6rem 1.5rem">💾 Guardar Área</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── AREA DELETE CONFIRM ──────────────────────────────────────────────────── -->
+<div class="confirm-overlay" id="area-confirm-overlay">
+  <div class="confirm-card">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title">¿Eliminar área?</div>
+    <div class="confirm-sub">
+      Se eliminará "<strong id="confirm-area-label"></strong>" permanentemente.<br>
+      Las herramientas asignadas a esta área no se eliminarán, pero quedarán sin área visible en el sidebar.
+    </div>
+    <div class="confirm-actions">
+      <button class="btn-secondary" onclick="cancelAreaDelete()">Cancelar</button>
+      <button class="btn-danger" onclick="executeAreaDelete()" style="padding:0.55rem 1.25rem">Sí, eliminar</button>
     </div>
   </div>
 </div>

@@ -33,7 +33,16 @@ const path = require('path');
   }
 })();
 
+// ── fetch con timeout explícito (Netlify free timeout = 10s) ─────────────────
+function fetchWithTimeout(url, options, ms = 9000) {
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...options, signal: ctrl.signal })
+    .finally(() => clearTimeout(tid));
+}
+
 const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getFirestore }                  = require('firebase-admin/firestore');
 const { getAuth }                       = require('firebase-admin/auth');
 
 function initFirebase() {
@@ -47,8 +56,9 @@ async function verifyFirebaseToken(token) {
   return getAuth().verifyIdToken(token);
 }
 
-// ── System prompt ─────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `Eres el asistente de catalogación de herramientas IA de Obras Hergon (HERGONSA), empresa peruana de construcción e infraestructura especializada en proyectos Obras por Impuestos (OxI) bajo Ley N°29230. Tono: técnico-formal, español peruano, orientado a profesionales de construcción. Nunca uses jerga genérica ("solución innovadora", "poderosa herramienta", "de última generación").
+// ── System prompt (plantilla — áreas se inyectan dinámicamente desde Firestore)
+// Para agregar/editar áreas: usar el Admin Panel > Gestionar Áreas, no editar este archivo.
+const SYSTEM_PROMPT_TEMPLATE = `Eres el asistente de catalogación de herramientas IA de Obras Hergon (HERGONSA), empresa peruana de construcción e infraestructura especializada en proyectos Obras por Impuestos (OxI) bajo Ley N°29230. Tono: técnico-formal, español peruano, orientado a profesionales de construcción. Nunca uses jerga genérica ("solución innovadora", "poderosa herramienta", "de última generación").
 
 ═══ REGLAS DE CAMPO ═══
 
@@ -98,8 +108,7 @@ Tags válidos y tagColor:
 Descripción del step: 1-2 oraciones, imperativo o descripción directa. Incluir comandos, rutas o acciones exactas cuando corresponda.
 
 CÓDIGO — patrón [PREFIJO]-[NNN] con ceros a la izquierda. Prefijos por área:
-GP=Gestión Proyectos · CO=Costos · BIM=BIM · IM=Arquitectura · RH=RRHH
-SSOMA=SSOMA · GO=Gestión Obra · ADM=Administración · COM=Compras · COORD=Coordinación
+{{AREA_PREFIXES}}
 El número siguiente se determina leyendo existingCodes[].
 
 RECURSOS — {icon, name, url, desc}.
@@ -133,7 +142,7 @@ Si el usuario no proporciona URLs, devolver resources: [].
   "resources": [{"icon":"emoji","name":"string","url":"string","desc":"string"}],
   "costNotes": "string o null"
 }
-Áreas válidas: gestión de proyectos, costos, bim, arquitectura, ssoma, gestión obra, rrhh, administración, compras, coordinación.
+Áreas válidas: {{VALID_AREAS}}.
 
 ═══ EJEMPLOS DE ESTILO (reqs + flow) ═══
 
@@ -171,6 +180,42 @@ Ejemplo B — SaaS externo sin MCPs, herramienta IM:
   ]
 }`;
 
+// ── Build system prompt with areas from Firestore ─────────────────────────────
+async function buildSystemPrompt() {
+  initFirebase();
+  const db = getFirestore();
+  let areas = [];
+  try {
+    const snap = await db.collection('areas').orderBy('order').get();
+    areas = snap.docs.map(d => d.data());
+  } catch {
+    // Fallback hardcodeado si Firestore no responde
+    areas = [
+      { key: 'gestión de proyectos', label: 'Gestión Proyectos', codePrefix: 'GP' },
+      { key: 'costos',               label: 'Costos',            codePrefix: 'CO' },
+      { key: 'bim',                  label: 'BIM',               codePrefix: 'BIM' },
+      { key: 'arquitectura',         label: 'Arquitectura',      codePrefix: 'IM' },
+      { key: 'ssoma',                label: 'SSOMA',             codePrefix: 'SSOMA' },
+      { key: 'gestión obra',         label: 'Gestión Obra',      codePrefix: 'GO' },
+      { key: 'rrhh',                 label: 'RRHH',              codePrefix: 'RH' },
+      { key: 'administración',       label: 'Administración',    codePrefix: 'ADM' },
+      { key: 'compras',              label: 'Compras',           codePrefix: 'COM' },
+      { key: 'coordinación',         label: 'Coordinación',      codePrefix: 'COORD' },
+    ];
+  }
+
+  const areaPrefixes = areas
+    .filter(a => a.codePrefix)
+    .map(a => `${a.codePrefix}=${a.label}`)
+    .join(' · ');
+
+  const validAreas = areas.map(a => a.key).join(', ');
+
+  return SYSTEM_PROMPT_TEMPLATE
+    .replace('{{AREA_PREFIXES}}', areaPrefixes)
+    .replace('{{VALID_AREAS}}', validAreas);
+}
+
 // ── Provider auto-detection ───────────────────────────────────────────────────
 function autoDetectProvider() {
   if (process.env.OPENROUTER_API_KEY) return 'openrouter';
@@ -182,9 +227,9 @@ function autoDetectProvider() {
 
 // ── Provider implementations (native fetch, no SDKs) ─────────────────────────
 
-async function callOpenRouter(userPrompt) {
+async function callOpenRouter(systemPrompt, userPrompt) {
   const model = process.env.AI_MODEL || 'anthropic/claude-haiku-4-5';
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
@@ -195,7 +240,7 @@ async function callOpenRouter(userPrompt) {
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user',   content: userPrompt },
       ],
       temperature: 0.2,
@@ -206,10 +251,10 @@ async function callOpenRouter(userPrompt) {
   return data.choices[0].message.content;
 }
 
-async function callAnthropic(userPrompt) {
+async function callAnthropic(systemPrompt, userPrompt) {
   const model  = process.env.AI_MODEL || 'claude-haiku-4-5-20251001';
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'x-api-key':         apiKey,
@@ -219,7 +264,7 @@ async function callAnthropic(userPrompt) {
     body: JSON.stringify({
       model,
       max_tokens: 2048,
-      system:   SYSTEM_PROMPT,
+      system:   systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
   });
@@ -228,9 +273,9 @@ async function callAnthropic(userPrompt) {
   return data.content[0].text;
 }
 
-async function callOpenAI(userPrompt) {
+async function callOpenAI(systemPrompt, userPrompt) {
   const model = process.env.AI_MODEL || 'gpt-4o-mini';
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -239,7 +284,7 @@ async function callOpenAI(userPrompt) {
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user',   content: userPrompt },
       ],
       temperature: 0.2,
@@ -250,18 +295,18 @@ async function callOpenAI(userPrompt) {
   return data.choices[0].message.content;
 }
 
-async function callGemini(userPrompt) {
+async function callGemini(systemPrompt, userPrompt) {
   const model  = process.env.AI_MODEL || 'gemini-2.5-flash';
   const apiKey = process.env.GEMINI_API_KEY;
   const url   = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method:  'POST',
     headers: {
       'Content-Type':    'application/json',
       'x-goog-api-key':  apiKey,
     },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      system_instruction: { parts: [{ text: systemPrompt }] },
       contents:           [{ role: 'user', parts: [{ text: userPrompt }] }],
       generationConfig:   { temperature: 0.2 },
     }),
@@ -272,13 +317,13 @@ async function callGemini(userPrompt) {
 }
 
 // ── Dispatcher ────────────────────────────────────────────────────────────────
-async function callAI(userPrompt) {
+async function callAI(systemPrompt, userPrompt) {
   const provider = (process.env.AI_PROVIDER || autoDetectProvider() || '').toLowerCase();
   switch (provider) {
-    case 'openrouter': return callOpenRouter(userPrompt);
-    case 'anthropic':  return callAnthropic(userPrompt);
-    case 'openai':     return callOpenAI(userPrompt);
-    case 'gemini':     return callGemini(userPrompt);
+    case 'openrouter': return callOpenRouter(systemPrompt, userPrompt);
+    case 'anthropic':  return callAnthropic(systemPrompt, userPrompt);
+    case 'openai':     return callOpenAI(systemPrompt, userPrompt);
+    case 'gemini':     return callGemini(systemPrompt, userPrompt);
     default:
       throw new Error(
         'No AI provider configured. Set AI_PROVIDER (openrouter|anthropic|openai|gemini) ' +
@@ -360,9 +405,12 @@ exports.handler = async (event) => {
     : '';
   const userPrompt = `${codesInfo}${contextBlock}\nDescripción de la herramienta:\n---\n${rawText.trim()}`;
 
+  // ── Build system prompt with live areas from Firestore
+  const systemPrompt = await buildSystemPrompt();
+
   // ── Call AI + parse
   try {
-    const aiText  = await callAI(userPrompt);
+    const aiText  = await callAI(systemPrompt, userPrompt);
     const payload = parseAIResponse(aiText);
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, payload }) };
   } catch (err) {

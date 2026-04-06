@@ -9,6 +9,14 @@
 const fs   = require('fs');
 const path = require('path');
 
+// ── fetch con timeout explícito (Netlify free timeout = 10s) ─────────────────
+function fetchWithTimeout(url, options, ms = 9000) {
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...options, signal: ctrl.signal })
+    .finally(() => clearTimeout(tid));
+}
+
 (function loadDotEnv() {
   const candidates = [
     path.join(process.cwd(), '.env'),
@@ -118,7 +126,7 @@ async function callGemini(systemPrompt, history, message) {
     { role: 'user', parts: [{ text: message }] },
   ];
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
@@ -139,7 +147,7 @@ async function callAnthropic(systemPrompt, history, message) {
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: 'user', content: message },
   ];
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
@@ -159,7 +167,7 @@ async function callOpenAI(systemPrompt, history, message) {
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: 'user', content: message },
   ];
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -179,7 +187,7 @@ async function callOpenRouter(systemPrompt, history, message) {
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: 'user', content: message },
   ];
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
@@ -254,11 +262,27 @@ exports.handler = async (event) => {
   const safeMessage = String(message).slice(0, 500);
   const safeHistory = normalizeHistory(history);
 
-  const systemPrompt = buildSystemPrompt(relevantTools);
+  // Sanitizar relevantTools desde el cliente — nunca confiar en el payload externo
+  const MAX_TOOLS = 8;
+  const MAX_FIELD = 200;
+  const safeTools = (Array.isArray(relevantTools) ? relevantTools : [])
+    .slice(0, MAX_TOOLS)
+    .map(t => ({
+      code:      String(t.code  || '').slice(0, 20),
+      title:     String(t.title || '').slice(0, 80),
+      area:      String(t.area  || '').slice(0, 40),
+      desc:      String(t.desc  || '').slice(0, MAX_FIELD),
+      reqs:      Array.isArray(t.reqs)      ? t.reqs.slice(0, 10)  : [],
+      steps:     Array.isArray(t.steps)     ? t.steps.slice(0, 6)  : [],
+      flow:      Array.isArray(t.flow)      ? t.flow.slice(0, 5)   : [],
+      resources: Array.isArray(t.resources) ? t.resources.slice(0, 4) : [],
+    }));
+
+  const systemPrompt = buildSystemPrompt(safeTools);
 
   try {
     const rawReply = await callAI(systemPrompt, safeHistory, safeMessage);
-    const reply    = applyOutputGuardrail(rawReply, relevantTools);
+    const reply    = applyOutputGuardrail(rawReply, safeTools);
     return { statusCode: 200, headers, body: JSON.stringify({ reply }) };
   } catch (err) {
     console.error('[chat-tool] error:', err.message);

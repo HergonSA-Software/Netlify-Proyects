@@ -8,8 +8,8 @@
   let isLoading   = false;
 
   const API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:8888/.netlify/functions'
-    : '/.netlify/functions';
+    ? 'http://localhost:8888/api'
+    : '/api';
 
   // ── Injection patterns (client-side guardrail) ─────────────────────────────
   const INJECTION_PATTERNS = [
@@ -28,19 +28,17 @@
     /DAN\s+mode/i,
   ];
 
-  // ── Area keyword map for priority-2 filtering ─────────────────────────────
-  const AREA_KEYWORDS = {
-    'gestión de proyectos': ['gestión de proyectos', 'gestión proyectos', 'gestion proyectos', 'oxi', 'obra por impuesto', 'obras por impuesto', 'proyecto'],
-    'costos':               ['costo', 'costos', 'presupuesto', 'apu', 'metrado', 'expediente', 'valorizacion', 'valorización'],
-    'bim':                  ['bim', 'revit', 'modelo bim', 'navisworks', 'ifc'],
-    'arquitectura':         ['arquitectura', 'plano', 'inspectmind', 'diseño'],
-    'ssoma':                ['ssoma', 'seguridad', 'salud ocupacional', 'riesgo', 'accidente', 'epp', 'petar', 'ats'],
-    'gestión obra':         ['gestión obra', 'gestion obra', 'campo', 'construcción', 'construccion', 'obra'],
-    'rrhh':                 ['rrhh', 'recursos humanos', 'personal', 'trabajador', 'planilla', 'contrato'],
-    'administración':       ['administración', 'administracion', 'administrativo', 'oficina'],
-    'compras':              ['compras', 'adquisición', 'adquisicion', 'proveedor', 'logística', 'logistica', 'cotización'],
-    'coordinación':         ['coordinación', 'coordinacion', 'coordinar', 'interdisciplinario'],
-  };
+  // ── Area keyword map — built lazily from window.areasData (loaded by catalog.js) ──
+  function buildAreaKeywords() {
+    const areas = window.areasData || [];
+    const map = {};
+    areas.forEach(a => {
+      if (a.key && Array.isArray(a.keywords) && a.keywords.length > 0) {
+        map[a.key] = a.keywords;
+      }
+    });
+    return map;
+  }
 
   // ── Tool filtering — 4-priority strategy ──────────────────────────────────
   // 'allTools' is declared with `let` in catalog.js — it lives in script scope
@@ -57,6 +55,7 @@
     if (byCode.length) return byCode.slice(0, 3);
 
     // Priority 2: area keyword match → return full tools of that area (max 5)
+    const AREA_KEYWORDS = buildAreaKeywords();
     for (const [area, keywords] of Object.entries(AREA_KEYWORDS)) {
       if (keywords.some(kw => q.includes(kw))) {
         const byArea = tools.filter(t =>

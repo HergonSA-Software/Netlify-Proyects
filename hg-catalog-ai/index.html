@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/img/logo.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/img/logo.png">
+<link rel="apple-touch-icon" href="assets/img/logo.png">
 <title>Catálogo IA — Obras Hergon</title>
 <link rel="stylesheet" href="assets/css/variables.css">
 <link rel="stylesheet" href="assets/css/layout.css">
@@ -29,69 +32,15 @@
       <div class="sidebar-logo-img">
         <img src="assets/img/logo.png" alt="Hergon" class="hergon-logo">
       </div>
-      <div class="sidebar-title">Catálogo<br>Herramientas IA</div>
-      <div class="sidebar-sub">Claude Desktop · Cowork</div>
-      <div class="sidebar-version">v2026 · Herramientas activas</div>
+      <div class="sidebar-title"><br>Catálogo de <br> Herramientas IA & Innovación</div>
+      <div class="sidebar-sub">Herramientas activas</div>
+      <div class="sidebar-version">V 1.0.0 - 2026</div>
     </div>
     <div class="area-section">
       <div class="area-label">Áreas de Trabajo</div>
-      <button class="area-btn active" data-area="todas" onclick="setArea('todas')">
-        <div class="area-icon">🗂️</div>
-        <span class="area-name">Todas</span>
-        <span class="area-count" id="cnt-todas">0</span>
-      </button>
-      <hr class="area-divider">
-      <button class="area-btn" data-area="gestión de proyectos" onclick="setArea('gestión de proyectos')">
-        <div class="area-icon">📋</div>
-        <span class="area-name">Gestión Proyectos</span>
-        <span class="area-count" id="cnt-gestion">0</span>
-      </button>
-      <button class="area-btn" data-area="costos" onclick="setArea('costos')">
-        <div class="area-icon">💰</div>
-        <span class="area-name">Costos</span>
-        <span class="area-count" id="cnt-costos">0</span>
-      </button>
-      <button class="area-btn" data-area="bim" onclick="setArea('bim')">
-        <div class="area-icon">🧊</div>
-        <span class="area-name">BIM</span>
-        <span class="area-count" id="cnt-bim">0</span>
-      </button>
-      <button class="area-btn" data-area="arquitectura" onclick="setArea('arquitectura')">
-        <div class="area-icon">🏛️</div>
-        <span class="area-name">Arquitectura</span>
-        <span class="area-count" id="cnt-arq">0</span>
-      </button>
-      <hr class="area-divider">
-      <button class="area-btn" data-area="ssoma" onclick="setArea('ssoma')">
-        <div class="area-icon">🦺</div>
-        <span class="area-name">SSOMA</span>
-        <span class="area-count" id="cnt-ssoma">0</span>
-      </button>
-      <button class="area-btn" data-area="gestión obra" onclick="setArea('gestión obra')">
-        <div class="area-icon">🏗️</div>
-        <span class="area-name">Gestión Obra</span>
-        <span class="area-count" id="cnt-gobra">0</span>
-      </button>
-      <button class="area-btn" data-area="rrhh" onclick="setArea('rrhh')">
-        <div class="area-icon">👥</div>
-        <span class="area-name">RRHH</span>
-        <span class="area-count" id="cnt-rrhh">0</span>
-      </button>
-      <button class="area-btn" data-area="administración" onclick="setArea('administración')">
-        <div class="area-icon">📁</div>
-        <span class="area-name">Administración</span>
-        <span class="area-count" id="cnt-admin">0</span>
-      </button>
-      <button class="area-btn" data-area="compras" onclick="setArea('compras')">
-        <div class="area-icon">🛒</div>
-        <span class="area-name">Compras</span>
-        <span class="area-count" id="cnt-compras">0</span>
-      </button>
-      <button class="area-btn" data-area="coordinación" onclick="setArea('coordinación')">
-        <div class="area-icon">🔗</div>
-        <span class="area-name">Coordinación</span>
-        <span class="area-count" id="cnt-coord">0</span>
-      </button>
+      <div id="area-list">
+        <!-- Populated dynamically by catalog.js after loading areas from Firestore -->
+      </div>
     </div>
     <div class="sidebar-footer">
       <div class="sidebar-footer-text">Obras Hergon S.A.<br>Catálogo interno — uso exclusivo</div>

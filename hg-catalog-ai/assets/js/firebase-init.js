@@ -30,13 +30,31 @@ function fsDocToObj(doc) {
   return obj;
 }
 
-// Fetch all tools from Firestore (public read)
+// Fetch all tools from Firestore (public read) — paginado automático
 async function fetchAllTools() {
-  const url = `${FIRESTORE_BASE}/tools?pageSize=100&orderBy=code`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Firestore fetch failed: ${res.status}`);
-  const data = await res.json();
-  return (data.documents || []).map(fsDocToObj);
+  const MAX_PAGES = 20;  // techo de seguridad: máx 2000 tools
+  const PAGE_SIZE = 100;
+  let all         = [];
+  let pageToken   = null;
+  let page        = 0;
+
+  while (page < MAX_PAGES) {
+    const params = new URLSearchParams({ pageSize: PAGE_SIZE, orderBy: 'code' });
+    if (pageToken) params.set('pageToken', pageToken);
+
+    const res = await fetch(`${FIRESTORE_BASE}/tools?${params}`);
+    if (!res.ok) throw new Error(`Firestore fetch failed: ${res.status}`);
+
+    const data = await res.json();
+    const docs  = (data.documents || []).map(fsDocToObj);
+    all.push(...docs);
+
+    if (!data.nextPageToken || docs.length < PAGE_SIZE) break;
+    pageToken = data.nextPageToken;
+    page++;
+  }
+
+  return all;
 }
 
 // Fetch single tool by Firestore document ID
