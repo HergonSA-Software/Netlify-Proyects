@@ -17,9 +17,9 @@ Catálogo interno de herramientas de IA para Obras Hergon.
 
 ## URLs
 
-- Viewer (público): [https://hergon-catalogo-ia.netlify.app](https://hergon-catalogo-ia.netlify.app)
-- Admin: [https://hergon-catalogo-ia.netlify.app/admin](https://hergon-catalogo-ia.netlify.app/admin)
-- Netlify dashboard: [https://app.netlify.com/projects/hergon-catalogo-ia](https://app.netlify.com/projects/hergon-catalogo-ia)
+- Viewer (público): [https://hergon-catalog-ai.web.app](https://hergon-catalog-ai.web.app)
+- Admin: [https://hergon-catalog-ai.web.app/admin](https://hergon-catalog-ai.web.app/admin)
+- Firebase console: [https://console.firebase.google.com/project/hergon-catalog-ai](https://console.firebase.google.com/project/hergon-catalog-ai)
 
 ## Funcionalidades principales
 
@@ -77,44 +77,25 @@ Variables principales:
 Requisitos:
 
 - Node.js 18+
-- Netlify CLI (si usarás `netlify dev`)
-
-Instalación de Netlify CLI:
-
-**Opción 1 — Instalar Netlify CLI globalmente (recomendado)**  
-En tu terminal PowerShell, ejecuta:
-
-```bash
-npm install -g netlify-cli
-```
-
-Luego verifica que quedó instalado:
-
-```bash
-netlify --version
-```
-
-Y ya podrás correr:
-
-```bash
-netlify dev
-```
-
-**Opción 2 — Ejecutar sin instalación global**
-
-```bash
-npx netlify dev
-```
+- Firebase CLI (`npm install -g firebase-tools`)
 
 Pasos:
 
-1. Instalar dependencias:
-   - `npm install`
-2. Crear `.env` a partir de `.env.example`
-3. Levantar entorno local:
-   - `netlify dev`
-4. Abrir en navegador:
-   - [http://localhost:8888](http://localhost:8888)
+1. Instalar dependencias del proyecto raíz y de las functions:
+   ```bash
+   npm install
+   cd functions && npm install && cd ..
+   ```
+2. Crear `.env` a partir de `.env.example` (para `generate-env.js`)
+3. Crear `functions/.env` a partir de `functions/.env.example` (para las Cloud Functions)
+4. Levantar el emulador local:
+   ```bash
+   npm run dev
+   ```
+5. Abrir en navegador:
+   - Catálogo público: [http://localhost:5000](http://localhost:5000)
+   - Admin: [http://localhost:5000/admin](http://localhost:5000/admin)
+   - Emulator UI: [http://localhost:4000](http://localhost:4000)
 
 ## Seguridad
 

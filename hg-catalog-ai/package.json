@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Catálogo de Herramientas IA — Obras Hergon",
+  "scripts": {
+    "dev": "node scripts/generate-env.js && firebase emulators:start --only hosting,functions",
+    "deploy": "firebase deploy",
+    "gen-env": "node scripts/generate-env.js"
+  },
   "dependencies": {
     "firebase-admin": "^12.7.0"
   },

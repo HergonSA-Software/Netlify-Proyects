@@ -4,6 +4,12 @@ node_modules/
 # Netlify local artifacts
 .netlify/
 
+# Firebase emulator cache
+.firebase/
+
+# Functions dependencies (instalar con: cd functions && npm install)
+functions/node_modules/
+
 # Logs
 *.log
 npm-debug.log*

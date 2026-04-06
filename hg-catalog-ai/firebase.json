@@ -1,0 +1,48 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "netlify/**",
+      "functions/**",
+      "scripts/**",
+      ".env*",
+      "*.toml",
+      "_redirects",
+      "deno.lock",
+      "node_modules/**",
+      "package-lock.json",
+      "CLAUDE.md",
+      "README.md",
+      "image/**",
+      ".git/**",
+      ".firebaserc",
+      "firebase.json"
+    ],
+    "predeploy": ["node scripts/generate-env.js"],
+    "rewrites": [
+      { "source": "/api/**", "function": "api", "region": "us-central1" },
+      { "source": "/admin", "destination": "/admin/index.html" },
+      { "source": "**", "destination": "/index.html" }
+    ]
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": ["node_modules", ".git"]
+    }
+  ],
+  "emulators": {
+    "functions": {
+      "port": 5001
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
+  }
+}

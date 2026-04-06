@@ -8,43 +8,44 @@ HG Catalog AI is an AI tool catalog manager for Obras Hergon S.A. (a Peruvian co
 - A **public catalog** (`index.html`) for browsing categorized AI tools
 - An **admin panel** (`admin/index.html`) with Firebase Auth for managing tools and areas
 - A **chatbot assistant** for natural language catalog queries
-- **Netlify Functions** as the backend API
+- **Cloud Functions gen 2** as the backend API (via Firebase Hosting rewrites)
 
 ## Development Commands
 
 ```bash
-# Install dependencies
+# Install dependencies (root + functions)
 npm install
+cd functions && npm install && cd ..
 
-# Local development (requires Netlify CLI)
-netlify dev        # Serves on http://localhost:8888
+# Generate assets/js/env.js from .env (required before first run)
+npm run gen-env
 
-# Deploy
-netlify deploy     # Preview deploy
-netlify deploy --prod  # Production deploy
+# Local development — Firebase Emulator (hosting + functions)
+npm run dev        # Serves on http://localhost:5000, Emulator UI on http://localhost:4000
+
+# Deploy to production
+npm run deploy     # Runs predeploy (generate-env.js) + firebase deploy
 ```
 
-The build command (run by Netlify on deploy) is: `npm install && node scripts/generate-env.js`
-
-`scripts/generate-env.js` generates `assets/js/env.js` from environment variables, injecting `FIREBASE_API_KEY` for the frontend.
+`scripts/generate-env.js` generates `assets/js/env.js` from `.env`, injecting `FIREBASE_API_KEY` for the frontend. Runs automatically on `firebase deploy` via `predeploy` hook in `firebase.json`.
 
 ## Architecture
 
 ### Stack
-- **Frontend**: Vanilla HTML/CSS/JS (no framework), SPA routing via `netlify.toml` redirects
-- **Backend**: Netlify Functions (Node.js 18+, esbuild bundler)
+- **Frontend**: Vanilla HTML/CSS/JS (no framework), SPA routing via `firebase.json` rewrites
+- **Backend**: Cloud Functions gen 2 (`functions/`) — single HTTP function `api` with Express router
 - **Database**: Firestore — collections `tools` and `areas`
 - **Auth**: Firebase Auth (client-side JWT) + Firebase Admin SDK (server-side JWT verification)
 - **AI**: Anthropic Claude, OpenAI, Google Gemini, or OpenRouter — auto-detected by which API key is present, or forced via `AI_PROVIDER` env var
 
 ### API Routes
-All `/api/*` requests proxy to `netlify/functions/*`:
+All `/api/*` requests route to `functions/index.js` (Express app) via Firebase Hosting rewrite:
 
 | Route | Auth | Description |
 |-------|------|-------------|
 | `GET /api/areas` | Public | List areas (auto-seeds 10 default areas on first run) |
 | `POST/PUT/DELETE /api/areas` | Firebase JWT | Manage areas |
-| `POST /api/chat-tool` | Public (rate-limited: 10/min/IP) | Chatbot |
+| `POST /api/chat-tool` | Public (rate-limited: 10/min/IP via express-rate-limit) | Chatbot |
 | `POST /api/generate-tool` | Firebase JWT | AI tool generation |
 | `POST/PUT /api/save-tool` | Firebase JWT | Create/update tools |
 | `DELETE /api/delete-tool?id=` | Firebase JWT | Delete tools |
@@ -69,17 +70,17 @@ Provider auto-detection priority: `OpenRouter → Anthropic → OpenAI → Gemin
 
 ## Environment Variables
 
-**Frontend** (injected at build time via `generate-env.js`):
+**Frontend** (injected at build time via `generate-env.js`, stored in root `.env`):
 - `FIREBASE_API_KEY` — Public Firebase API key
 
-**Backend** (Netlify environment):
+**Backend** (Cloud Functions — `functions/.env` for local, Firebase Console/Secrets for producción):
 - `FIREBASE_SA_KEY` — Firebase service account JSON (for Admin SDK)
 - `AI_PROVIDER` — `anthropic | openai | gemini | openrouter` (optional, auto-detected)
-- `AI_MODEL` — Model name override (e.g., `claude-haiku-4-5-20251001`)
+- `AI_MODEL` — Model name override (e.g., `gemini-2.5-flash`)
 - `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`
-- `URL` — Deployed site URL (used for CORS and OpenRouter referer headers)
+- `ALLOWED_ORIGIN` — Deployed site URL for CORS headers (e.g., `https://hergon-catalog-ai.web.app`)
 
-See `.env.example` for the full list.
+See `.env.example` and `functions/.env.example` for the full list.
 
 ## Tool Data Model
 

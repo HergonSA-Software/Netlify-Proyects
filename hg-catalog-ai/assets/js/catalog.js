@@ -1,8 +1,8 @@
 // ── Catalog viewer logic ──────────────────────────────────────────────────────
 
 const CATALOG_API_BASE = window.location.hostname === 'localhost'
-  ? 'http://localhost:8888/.netlify/functions'
-  : '/.netlify/functions';
+  ? 'http://localhost:5000/api'
+  : '/api';
 
 // ── Sanitización HTML — previene XSS al insertar datos de Firestore en el DOM ─
 function escHtml(str) {

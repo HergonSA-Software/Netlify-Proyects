@@ -1,8 +1,8 @@
 // ── Admin panel logic ─────────────────────────────────────────────────────────
 
 const API_BASE = window.location.hostname === 'localhost'
-  ? 'http://localhost:8888/.netlify/functions'
-  : '/.netlify/functions';
+  ? 'http://localhost:5000/api'
+  : '/api';
 
 let tools     = [];
 let areasData = [];
